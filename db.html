@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB Architect Pro - Enterprise Database Designer</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    
+    <style>
+        :root {
+            --primary: #0066cc;
+            --secondary: #00b4d8;
+            --success: #06d6a0;
+            --danger: #ef476f;
+            --dark: #2b2d42;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .app-container { display: flex; height: 100vh; }
+        
+        .sidebar {
+            width: 280px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 24px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .sidebar-header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #495057;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item:hover { background: #f8f9fa; border-left-color: var(--primary); }
+        .nav-item.active { background: #e7f3ff; border-left-color: var(--primary); color: var(--primary); font-weight: 600; }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .toolbar {
+            background: white;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-custom {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary-custom { background: var(--primary); color: white; }
+        .btn-primary-custom:hover { background: #0052a3; transform: translateY(-1px); }
+        .btn-success-custom { background: var(--success); color: white; }
+        .btn-success-custom:hover { background: #05b892; }
+        
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            background: white;
+            margin: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            padding: 32px;
+        }
+        
+        .view-container { display: none; }
+        .view-container.active { display: block; }
+        
+        .schema-designer {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        .designer-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .panel-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        
+        .form-control-custom {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .form-control-custom:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+        }
+        
+        .table-item {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 2px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .table-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0,102,204,0.1);
+        }
+        
+        .table-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .table-name {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--dark);
+        }
+        
+        .field-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        
+        .CodeMirror {
+            height: 500px !important;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .template-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .template-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 8px 24px rgba(0,102,204,0.15);
+            transform: translateY(-4px);
+        }
+        
+        .template-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .template-body { padding: 20px; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .badge-custom {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .badge-primary {
+            background: rgba(0,102,204,0.1);
+            color: var(--primary);
+        }
+        
+        @media (max-width: 768px) {
+            .schema-designer { grid-template-columns: 1fr; }
+            .template-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1><i class="bi bi-database-fill"></i> DB Architect Pro</h1>
+                <p style="font-size: 12px; margin: 8px 0 0; opacity: 0.9;">Enterprise Database Designer</p>
+            </div>
+            
+            <div class="p-3">
+                <div class="nav-item active" data-view="schema-designer">
+                    <i class="bi bi-diagram-3"></i> Schema Designer
+                </div>
+                <div class="nav-item" data-view="sql-editor">
+                    <i class="bi bi-file-code"></i> SQL Editor
+                </div>
+                <div class="nav-item" data-view="query-builder">
+                    <i class="bi bi-code-square"></i> Query Builder
+                </div>
+                <div class="nav-item" data-view="data-dictionary">
+                    <i class="bi bi-book"></i> Data Dictionary
+                </div>
+                <div class="nav-item" data-view="templates">
+                    <i class="bi bi-files"></i> Templates
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div style="display: flex; gap: 12px;">
+                    <div style="display: flex; gap: 8px; background: white; padding: 4px; border-radius: 6px; border: 2px solid #dee2e6;">
+                        <button class="db-type-btn active" data-db="mysql" style="padding: 8px 16px; border: none; background: var(--primary); color: white; border-radius: 4px; cursor: pointer;">
+                            MySQL
+                        </button>
+                        <button class="db-type-btn" data-db="postgresql" style="padding: 8px 16px; border: none; background: transparent; border-radius: 4px; cursor: pointer;">
+                            PostgreSQL
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn-custom btn-success-custom" onclick="exportSQL()">
+                        <i class="bi bi-download"></i> Export SQL
+                    </button>
+                    <button class="btn-custom btn-primary-custom" onclick="exportSchema()">
+                        <i class="bi bi-file-earmark-arrow-down"></i> Export JSON
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Schema Designer -->
+                <div class="view-container active" id="schema-designer">
+                    <div class="schema-designer">
+                        <div class="designer-panel">
+                            <div class="panel-header">
+                                <h3><i class="bi bi-plus-circle"></i> Create Table</h3>
+                            </div>
+                            
+                            <form id="table-form" onsubmit="createTable(event)">
+                                <div class="form-group">
+                                    <label>Table Name</label>
+                                    <input type="text" class="form-control-custom" id="table-name" placeholder="e.g., users" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Fields</label>
+                                    <div id="fields-container">
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-5">
+                                                <input type="text" class="form-control-custom" placeholder="Field name" name="field-name">
+                                            </div>
+                                            <div class="col-4">
+                                                <select class="form-control-custom" name="field-type">
+                                                    <option value="INT">INT</option>
+                                                    <option value="VARCHAR(255)">VARCHAR(255)</option>
+                                                    <option value="TEXT">TEXT</option>
+                                                    <option value="DATE">DATE</option>
+                                                    <option value="DATETIME">DATETIME</option>
+                                                    <option value="BOOLEAN">BOOLEAN</option>
+                                                    <option value="DECIMAL(10,2)">DECIMAL</option>
+                                                    <option value="JSON">JSON</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-3">
+                                                <select class="form-control-custom" name="field-constraint">
+                                                    <option value="">None</option>
+                                                    <option value="PRIMARY KEY">PK</option>
+                                                    <option value="UNIQUE">UNIQUE</option>
+                                                    <option value="NOT NULL">NOT NULL</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn-custom" onclick="addField()" style="background: #6c757d; color: white; width: 100%; margin-top: 8px;">
+                                        <i class="bi bi-plus"></i> Add Field
+                                    </button>
+                                </div>
+                                
+                                <button type="submit" class="btn-custom btn-primary-custom" style="width: 100%;">
+                                    <i class="bi bi-plus-circle"></i> Create Table
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="designer-panel">
+                            <div class="panel-header">
+                                <h3>
+                                    <i class="bi bi-table"></i> Tables
+                                    <span class="badge-custom badge-primary" id="table-count">0</span>
+                                </h3>
+                            </div>
+                            
+                            <div id="tables-list">
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox"></i>
+                                    <h3>No Tables Yet</h3>
+                                    <p>Create your first table to get started</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SQL Editor -->
+                <div class="view-container" id="sql-editor">
+                    <h2 class="mb-4"><i class="bi bi-file-code"></i> SQL Editor</h2>
+                    
+                    <div class="mb-3">
+                        <button class="btn-custom btn-primary-custom" onclick="formatSQL()">
+                            <i class="bi bi-code"></i> Format
+                        </button>
+                        <button class="btn-custom btn-success-custom" onclick="saveSQL()">
+                            <i class="bi bi-save"></i> Save
+                        </button>
+                    </div>
+                    
+                    <textarea id="sql-code-editor"></textarea>
+                </div>
+                
+                <!-- Query Builder -->
+                <div class="view-container" id="query-builder">
+                    <h2 class="mb-4"><i class="bi bi-code-square"></i> Visual Query Builder</h2>
+                    
+                    <div class="designer-panel">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Table</label>
+                                <select class="form-control-custom" id="qb-table">
+                                    <option value="">Select table...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Columns</label>
+                                <input type="text" class="form-control-custom" id="qb-columns" placeholder="*, or column1, column2">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Where Column</label>
+                                <input type="text" class="form-control-custom" id="qb-where-col" placeholder="column">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Operator</label>
+                                <select class="form-control-custom" id="qb-where-op">
+                                    <option value="=">=</option>
+                                    <option value="!=">!=</option>
+                                    <option value=">">></option>
+                                    <option value="<"><</option>
+                                    <option value="LIKE">LIKE</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Value</label>
+                                <input type="text" class="form-control-custom" id="qb-where-val" placeholder="value">
+                            </div>
+                        </div>
+                        
+                        <button class="btn-custom btn-primary-custom" onclick="buildQuery()">
+                            <i class="bi bi-gear"></i> Generate Query
+                        </button>
+                        
+                        <div style="background: #2b2d42; color: white; padding: 20px; border-radius: 8px; margin-top: 20px; font-family: monospace; white-space: pre-wrap;" id="query-preview">
+-- Your query will appear here
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Data Dictionary -->
+                <div class="view-container" id="data-dictionary">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="bi bi-book"></i> Data Dictionary</h2>
+                        <div>
+                            <button class="btn-custom btn-success-custom" onclick="exportDictionary()">
+                                <i class="bi bi-file-earmark-word"></i> Export DOCX
+                            </button>
+                            <button class="btn-custom btn-primary-custom" onclick="exportDictionaryPDF()">
+                                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="dictionary-content">
+                        <div class="empty-state">
+                            <i class="bi bi-journal-text"></i>
+                            <h3>No Data Dictionary</h3>
+                            <p>Create tables to generate documentation</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Templates -->
+                <div class="view-container" id="templates">
+                    <h2 class="mb-4"><i class="bi bi-files"></i> Database Templates</h2>
+                    <div class="template-grid" id="templates-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script>
+        let currentDB = 'mysql';
+        let tables = [];
+        let sqlEditor;
+        
+        const dbTemplates = {
+            'ecommerce': {
+                name: 'E-Commerce Store',
+                icon: 'bi-cart4',
+                description: 'Complete schema for an online store with products, orders, customers, and payments',
+                schema: {
+                    users: {
+                        fields: [
+                            { name: 'id', type: 'INT', constraint: 'PRIMARY KEY' },
+                            { name: 'email', type: 'VARCHAR(255)', constraint: 'UNIQUE' },
+                            { name: 'password', type: 'VARCHAR(255)', constraint: 'NOT NULL' },
+                            { name: 'first_name', type: 'VARCHAR(100)', constraint: '' },
+                            { name: 'last_name', type: 'VARCHAR(100)', constraint: '' },
+                            { name: 'created_at', type: 'DATETIME', constraint: '' }
+                        ]
+                    },
+                    products: {
+                        fields: [
+                            { name: 'id', type: 'INT', constraint: 'PRIMARY KEY' },
+                            { name: 'name', type: 'VARCHAR(255)', constraint: 'NOT NULL' },
+                            { name: 'description', type: 'TEXT', constraint: '' },
+                            { name: 'price', type: 'DECIMAL(10,2)', constraint: 'NOT NULL' },
+                            { name: 'stock', type: 'INT', constraint: 'NOT NULL' }
+                        ]
+                    },
+                    orders: {
+                        fields: [
+                            { name: 'id', type: 'INT', constraint: 'PRIMARY KEY' },
+                            { name: 'user_id', type: 'INT', constraint: 'NOT NULL' },
+                            { name: 'total', type: 'DECIMAL(10,2)', constraint: 'NOT NULL' },
+                            { name: 'status', type: 'VARCHAR(50)', constraint: '' },
+                            { name: 'created_at', type: 'DATETIME', constraint: '' }
+                        ]
+                    }
+                }
+            },
+            'blog': {
+                name: 'Blog Platform',
+                icon: 'bi-journal-text',
+                description: 'Schema for a blogging platform with posts, comments, and categories',
+                schema: {
+                    authors: {
+                        fields: [
+                            { name: 'id', type: 'INT', constraint: 'PRIMARY KEY' },
+                            { name: 'username', type: 'VARCHAR(100)', constraint: 'UNIQUE' },
+                            { name: 'email', type: 'VARCHAR(255)', constraint: 'UNIQUE' },
+                            { name: 'bio', type: 'TEXT', constraint: '' }
+                        ]
+                    },
+                    posts: {
+                        fields: [
+                            { name: 'id', type: 'INT', constraint: 'PRIMARY KEY' },
+                            { name: 'author_id', type: 'INT', constraint: 'NOT NULL' },
+                            { name: 'title', type: 'VARCHAR(255)', constraint: 'NOT NULL' },
+                            { name: 'content', type: 'TEXT', constraint: 'NOT NULL' },
+                            { name: 'published', type: 'BOOLEAN', constraint: '' }
+                        ]
+                    },
+                    comments: {
+                        fields: [
+                            { name: 'id', type: 'INT', constraint: 'PRIMARY KEY' },
+                            { name: 'post_id', type: 'INT', constraint: 'NOT NULL' },
+                            { name: 'author_name', type: 'VARCHAR(100)', constraint: '' },
+                            { name: 'content', type: 'TEXT', constraint: 'NOT NULL' }
+                        ]
+                    }
+                }
+            },
+            'social': {
+                name: 'Social Network',
+                icon: 'bi-share',
+                description: 'Social media platform with users, posts, friendships, and messaging',
+                schema: {
+                    users: {
+                        fields: [
+                            { name: 'id', type: 'INT', constraint: 'PRIMARY KEY' },
+                            { name: 'username', type: 'VARCHAR(50)', constraint: 'UNIQUE' },
+                            { name: 'email', type: 'VARCHAR(255)', constraint: 'UNIQUE' },
+                            { name: 'bio', type: 'TEXT', constraint: '' }
+                        ]
+                    },
+                    posts: {
+                        fields: [
+                            { name: 'id', type: 'INT', constraint: 'PRIMARY KEY' },
+                            { name: 'user_id', type: 'INT', constraint: 'NOT NULL' },
+                            { name: 'content', type: 'TEXT', constraint: 'NOT NULL' },
+                            { name: 'likes_count', type: 'INT', constraint: '' }
+                        ]
+                    },
+                    friendships: {
+                        fields: [
+                            { name: 'id', type: 'INT', constraint: 'PRIMARY KEY' },
+                            { name: 'user_id', type: 'INT', constraint: 'NOT NULL' },
+                            { name: 'friend_id', type: 'INT', constraint: 'NOT NULL' },
+                            { name: 'status', type: 'VARCHAR(20)', constraint: '' }
+                        ]
+                    }
+                }
+            }
+        };
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initEditor();
+            initNavigation();
+            initDBSelector();
+            loadTemplates();
+            loadSavedData();
+        });
+        
+        function initEditor() {
+            sqlEditor = CodeMirror.fromTextArea(document.getElementById('sql-code-editor'), {
+                mode: 'text/x-sql',
+                theme: 'dracula',
+                lineNumbers: true,
+                autofocus: true
+            });
+            sqlEditor.setValue("-- Write your SQL queries here\nSELECT * FROM users;");
+        }
+        
+        function initNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const viewId = this.getAttribute('data-view');
+                    document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+                    document.getElementById(viewId).classList.add('active');
+                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    if (viewId === 'data-dictionary') generateDataDictionary();
+                    if (viewId === 'query-builder') populateQueryBuilder();
+                });
+            });
+        }
+        
+        function initDBSelector() {
+            document.querySelectorAll('.db-type-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentDB = this.getAttribute('data-db');
+                    document.querySelectorAll('.db-type-btn').forEach(b => {
+                        b.style.background = 'transparent';
+                        b.style.color = '#000';
+                    });
+                    this.style.background = 'var(--primary)';
+                    this.style.color = 'white';
+                    showToast(`Switched to ${currentDB.toUpperCase()}`, 'info');
+                });
+            });
+        }
+        
+        function addField() {
+            const container = document.getElementById('fields-container');
+            const row = document.createElement('div');
+            row.className = 'row g-2 mb-2';
+            row.innerHTML = `
+                <div class="col-5">
+                    <input type="text" class="form-control-custom" placeholder="Field name" name="field-name">
+                </div>
+                <div class="col-4">
+                    <select class="form-control-custom" name="field-type">
+                        <option value="INT">INT</option>
+                        <option value="VARCHAR(255)">VARCHAR(255)</option>
+                        <option value="TEXT">TEXT</option>
+                        <option value="DATE">DATE</option>
+                        <option value="DATETIME">DATETIME</option>
+                        <option value="BOOLEAN">BOOLEAN</option>
+                        <option value="DECIMAL(10,2)">DECIMAL</option>
+                    </select>
+                </div>
+                <div class="col-3">
+                    <select class="form-control-custom" name="field-constraint">
+                        <option value="">None</option>
+                        <option value="PRIMARY KEY">PK</option>
+                        <option value="UNIQUE">UNIQUE</option>
+                        <option value="NOT NULL">NOT NULL</option>
+                    </select>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+        
+        function createTable(e) {
+            e.preventDefault();
+            const tableName = document.getElementById('table-name').value.trim();
+            
+            if (!tableName) {
+                showToast('Table name is required', 'danger');
+                return;
+            }
+            
+            if (tables.find(t => t.name === tableName)) {
+                showToast('Table already exists', 'danger');
+                return;
+            }
+            
+            const fieldRows = document.querySelectorAll('#fields-container .row');
+            const fields = [];
+            
+            fieldRows.forEach(row => {
+                const name = row.querySelector('[name="field-name"]').value.trim();
+                const type = row.querySelector('[name="field-type"]').value;
+                const constraint = row.querySelector('[name="field-constraint"]').value;
+                
+                if (name) {
+                    fields.push({ name, type, constraint });
+                }
+            });
+            
+            if (fields.length === 0) {
+                showToast('At least one field is required', 'danger');
+                return;
+            }
+            
+            tables.push({ name: tableName, fields });
+            saveData();
+            renderTables();
+            document.getElementById('table-form').reset();
+            document.getElementById('fields-container').innerHTML = `
+                <div class="row g-2 mb-2">
+                    <div class="col-5">
+                        <input type="text" class="form-control-custom" placeholder="Field name" name="field-name">
+                    </div>
+                    <div class="col-4">
+                        <select class="form-control-custom" name="field-type">
+                            <option value="INT">INT</option>
+                            <option value="VARCHAR(255)">VARCHAR(255)</option>
+                            <option value="TEXT">TEXT</option>
+                            <option value="DATE">DATE</option>
+                            <option value="DATETIME">DATETIME</option>
+                            <option value="BOOLEAN">BOOLEAN</option>
+                            <option value="DECIMAL(10,2)">DECIMAL</option>
+                        </select>
+                    </div>
+                    <div class="col-3">
+                        <select class="form-control-custom" name="field-constraint">
+                            <option value="">None</option>
+                            <option value="PRIMARY KEY">PK</option>
+                            <option value="UNIQUE">UNIQUE</option>
+                            <option value="NOT NULL">NOT NULL</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            showToast(`Table "${tableName}" created!`, 'success');
+        }
+        
+        function renderTables() {
+            const container = document.getElementById('tables-list');
+            document.getElementById('table-count').textContent = tables.length;
+            
+            if (tables.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h3>No Tables Yet</h3>
+                        <p>Create your first table to get started</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            tables.forEach((table, index) => {
+                const div = document.createElement('div');
+                div.className = 'table-item';
+                div.innerHTML = `
+                    <div class="table-item-header">
+                        <div class="table-name"><i class="bi bi-table"></i> ${table.name}</div>
+                        <button onclick="deleteTable(${index})" style="border: none; background: none; color: var(--danger); cursor: pointer;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    ${table.fields.map(f => `
+                        <div class="field-item">
+                            <i class="bi bi-dash-circle" style="color: var(--primary);"></i>
+                            <span style="font-weight: 600;">${f.name}</span>
+                            <span style="color: #6c757d; font-family: monospace;">${f.type}</span>
+                            ${f.constraint ? `<span class="badge-custom badge-primary">${f.constraint}</span>` : ''}
+                        </div>
+                    `).join('')}
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function deleteTable(index) {
+            if (confirm(`Delete table "${tables[index].name}"?`)) {
+                tables.splice(index, 1);
+                saveData();
+                renderTables();
+                showToast('Table deleted', 'info');
+            }
+        }
+        
+        function generateSQL() {
+            let sql = `-- Database: ${currentDB}\n-- Generated: ${new Date().toLocaleString()}\n\n`;
+            
+            tables.forEach(table => {
+                sql += `CREATE TABLE ${table.name} (\n`;
+                const fieldDefs = table.fields.map(f => {
+                    let def = `  ${f.name} ${f.type}`;
+                    if (f.constraint) def += ` ${f.constraint}`;
+                    return def;
+                });
+                sql += fieldDefs.join(',\n');
+                sql += '\n);\n\n';
+            });
+            
+            return sql;
+        }
+        
+        function exportSQL() {
+            if (tables.length === 0) {
+                showToast('No tables to export', 'warning');
+                return;
+            }
+            
+            const sql = generateSQL();
+            const blob = new Blob([sql], { type: 'text/plain' });
+            saveAs(blob, `schema_${currentDB}_${Date.now()}.sql`);
+            showToast('SQL exported!', 'success');
+        }
+        
+        function exportSchema() {
+            if (tables.length === 0) {
+                showToast('No schema to export', 'warning');
+                return;
+            }
+            
+            const schema = { database: currentDB, created: new Date().toISOString(), tables };
+            const blob = new Blob([JSON.stringify(schema, null, 2)], { type: 'application/json' });
+            saveAs(blob, `schema_${currentDB}_${Date.now()}.json`);
+            showToast('Schema exported!', 'success');
+        }
+        
+        function formatSQL() {
+            const sql = sqlEditor.getValue();
+            const formatted = sql
+                .replace(/SELECT/gi, 'SELECT')
+                .replace(/FROM/gi, '\nFROM')
+                .replace(/WHERE/gi, '\nWHERE')
+                .replace(/ORDER BY/gi, '\nORDER BY');
+            sqlEditor.setValue(formatted);
+            showToast('SQL formatted', 'success');
+        }
+        
+        function saveSQL() {
+            const sql = sqlEditor.getValue();
+            const blob = new Blob([sql], { type: 'text/plain' });
+            saveAs(blob, `query_${Date.now()}.sql`);
+            showToast('SQL saved!', 'success');
+        }
+        
+        function populateQueryBuilder() {
+            const select = document.getElementById('qb-table');
+            select.innerHTML = '<option value="">Select table...</option>';
+            tables.forEach(t => {
+                select.innerHTML += `<option value="${t.name}">${t.name}</option>`;
+            });
+        }
+        
+        function buildQuery() {
+            const table = document.getElementById('qb-table').value;
+            const columns = document.getElementById('qb-columns').value || '*';
+            const whereCol = document.getElementById('qb-where-col').value;
+            const whereOp = document.getElementById('qb-where-op').value;
+            const whereVal = document.getElementById('qb-where-val').value;
+            
+            if (!table) {
+                showToast('Select a table first', 'warning');
+                return;
+            }
+            
+            let query = `SELECT ${columns}\nFROM ${table}`;
+            
+            if (whereCol && whereVal) {
+                query += `\nWHERE ${whereCol} ${whereOp} '${whereVal}'`;
+            }
+            
+            query += ';';
+            
+            document.getElementById('query-preview').textContent = query;
+        }
+        
+        function generateDataDictionary() {
+            const container = document.getElementById('dictionary-content');
+            
+            if (tables.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-journal-text"></i>
+                        <h3>No Data Dictionary</h3>
+                        <p>Create tables to generate documentation</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            tables.forEach(table => {
+                html += `
+                    <h3 class="mt-4 mb-3">${table.name}</h3>
+                    <table class="table table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Column</th>
+                                <th>Type</th>
+                                <th>Constraints</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${table.fields.map(f => `
+                                <tr>
+                                    <td><strong>${f.name}</strong></td>
+                                    <td><code>${f.type}</code></td>
+                                    <td>${f.constraint || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        async function exportDictionary() {
+            if (tables.length === 0) {
+                showToast('No data to export', 'warning');
+                return;
+            }
+            
+            const children = [];
+            
+            children.push(new docx.Paragraph({
+                text: 'Database Data Dictionary',
+                heading: docx.HeadingLevel.HEADING_1,
+                spacing: { after: 400 }
+            }));
+            
+            children.push(new docx.Paragraph({
+                text: `Database: ${currentDB.toUpperCase()}`,
+                spacing: { after: 200 }
+            }));
+            
+            tables.forEach(table => {
+                children.push(new docx.Paragraph({
+                    text: table.name,
+                    heading: docx.HeadingLevel.HEADING_2,
+                    spacing: { before: 400, after: 200 }
+                }));
+                
+                const tableRows = [
+                    new docx.TableRow({
+                        children: [
+                            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Column', bold: true })] }),
+                            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Type', bold: true })] }),
+                            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Constraints', bold: true })] })
+                        ]
+                    })
+                ];
+                
+                table.fields.forEach(f => {
+                    tableRows.push(new docx.TableRow({
+                        children: [
+                            new docx.TableCell({ children: [new docx.Paragraph(f.name)] }),
+                            new docx.TableCell({ children: [new docx.Paragraph(f.type)] }),
+                            new docx.TableCell({ children: [new docx.Paragraph(f.constraint || '-')] })
+                        ]
+                    }));
+                });
+                
+                children.push(new docx.Table({ rows: tableRows }));
+            });
+            
+            const doc = new docx.Document({ sections: [{ children }] });
+            const blob = await docx.Packer.toBlob(doc);
+            saveAs(blob, `data_dictionary_${currentDB}.docx`);
+            showToast('Dictionary exported!', 'success');
+        }
+        
+        function exportDictionaryPDF() {
+            if (tables.length === 0) {
+                showToast('No data to export', 'warning');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            let y = 20;
+            const margin = 20;
+            
+            doc.setFontSize(20);
+            doc.text('Database Data Dictionary', margin, y);
+            y += 10;
+            
+            doc.setFontSize(12);
+            doc.text(`Database: ${currentDB.toUpperCase()}`, margin, y);
+            y += 15;
+            
+            tables.forEach(table => {
+                if (y > 250) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                doc.setFontSize(16);
+                doc.text(table.name, margin, y);
+                y += 8;
+                
+                doc.setFontSize(10);
+                table.fields.forEach(f => {
+                    if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    doc.text(`• ${f.name} (${f.type}) ${f.constraint || ''}`, margin + 5, y);
+                    y += 6;
+                });
+                
+                y += 8;
+            });
+            
+            doc.save(`data_dictionary_${currentDB}.pdf`);
+            showToast('PDF exported!', 'success');
+        }
+        
+        function loadTemplates() {
+            const grid = document.getElementById('templates-grid');
+            
+            Object.entries(dbTemplates).forEach(([key, template]) => {
+                const card = document.createElement('div');
+                card.className = 'template-card';
+                card.onclick = () => loadTemplate(template);
+                
+                card.innerHTML = `
+                    <div class="template-header">
+                        <h3><i class="${template.icon}"></i> ${template.name}</h3>
+                        <p style="font-size: 13px; margin: 8px 0 0; opacity: 0.9;">${Object.keys(template.schema).length} tables</p>
+                    </div>
+                    <div class="template-body">
+                        <p style="font-size: 14px; color: #495057; margin-bottom: 16px;">${template.description}</p>
+                        <button class="btn-custom btn-primary-custom" style="width: 100%;">
+                            <i class="bi bi-download"></i> Load Template
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        function loadTemplate(template) {
+            if (tables.length > 0 && !confirm('This will replace your current schema. Continue?')) {
+                return;
+            }
+            
+            tables = [];
+            Object.entries(template.schema).forEach(([name, data]) => {
+                tables.push({ name, fields: data.fields });
+            });
+            
+            saveData();
+            renderTables();
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelectorAll('.nav-item')[0].classList.add('active');
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+            document.getElementById('schema-designer').classList.add('active');
+            showToast(`Template "${template.name}" loaded!`, 'success');
+        }
+        
+        function saveData() {
+            localStorage.setItem('dbArchitectTables', JSON.stringify(tables));
+            localStorage.setItem('dbArchitectDB', currentDB);
+        }
+        
+        function loadSavedData() {
+            const saved = localStorage.getItem('dbArchitectTables');
+            if (saved) {
+                tables = JSON.parse(saved);
+                renderTables();
+            }
+            
+            const savedDB = localStorage.getItem('dbArchitectDB');
+            if (savedDB) currentDB = savedDB;
+        }
+        
+        function showToast(message, type = 'success') {
+            const container = document.querySelector('.toast-container');
+            const colors = {
+                success: 'bg-success',
+                danger: 'bg-danger',
+                warning: 'bg-warning',
+                info: 'bg-info'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white ${colors[type]} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast, { autohide: true, delay: 3000 });
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', () => toast.remove());
+        }
+    </script>
+</body>
+</html>
